@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- Load reference UI test fonts from licensed, checked-in fixtures instead of Flutter's internal SDK cache, and await file reads before registering fonts.
+
 - Fix the GitHub formatting check for receipt tests and replace the invalid preview PNG fixture with a generated image that is loaded before assertions in both themes.
 
 - Make Asset details sections expand/collapse smoothly within the page, retain their content state, and remove expanded/collapsed divider borders.
