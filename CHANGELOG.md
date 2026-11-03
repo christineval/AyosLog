@@ -21,6 +21,8 @@
 
 ## Unreleased
 
+- Fix the GitHub formatting check for receipt tests and replace the invalid preview PNG fixture with a generated image that is loaded before assertions in both themes.
+
 - Make Asset details sections expand/collapse smoothly within the page, retain their content state, and remove expanded/collapsed divider borders.
 
 - Restyle asset and maintenance forms, asset details, calendar and service record details using the supplied visual references in both themes; center primary button labels and keep form actions visible.
