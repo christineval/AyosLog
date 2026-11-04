@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:ayoslog/core/database/app_database.dart' show MaintenancePlan;
 import 'package:ayoslog/core/providers.dart';
@@ -27,18 +26,8 @@ import 'package:ayoslog/features/predictions/domain/forecast_repository.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
-    final config = File('.dart_tool/package_config.json').absolute;
-    final packages = (jsonDecode(await config.readAsString())
-        as Map<String, dynamic>)['packages'] as List;
-    final flutter = packages
-        .cast<Map<String, dynamic>>()
-        .firstWhere((p) => p['name'] == 'flutter');
-    final sdk =
-        Directory.fromUri(config.uri.resolve(flutter['rootUri'] as String))
-            .parent
-            .parent
-            .path;
-    final fonts = '$sdk/bin/cache/artifacts/material_fonts';
+    // Keep reference rendering independent of the Flutter SDK cache layout.
+    const fonts = 'test/fixtures/fonts';
     final text = FontLoader('Roboto');
     final fallback = FontLoader('Ahem');
     for (final name in [
@@ -46,18 +35,16 @@ void main() {
       'roboto-medium.ttf',
       'roboto-bold.ttf'
     ]) {
-      final font = File('$fonts/$name')
-          .readAsBytes()
-          .then((bytes) => ByteData.sublistView(bytes));
-      text.addFont(font);
-      fallback.addFont(font);
+      final font =
+          ByteData.sublistView(await File('$fonts/$name').readAsBytes());
+      text.addFont(Future.value(font));
+      fallback.addFont(Future.value(font));
     }
     await text.load();
     await fallback.load();
-    final icons = FontLoader('MaterialIcons')
-      ..addFont(File('$fonts/materialicons-regular.otf')
-          .readAsBytes()
-          .then((bytes) => ByteData.sublistView(bytes)));
+    final iconFont = ByteData.sublistView(
+        await File('$fonts/materialicons-regular.otf').readAsBytes());
+    final icons = FontLoader('MaterialIcons')..addFont(Future.value(iconFont));
     await icons.load();
   });
   final asset = Asset(

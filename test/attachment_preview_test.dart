@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ayoslog/core/theme/app_theme.dart';
@@ -30,11 +30,17 @@ void main() {
       await tester.runAsync(() async {
         root = await Directory.systemTemp.createTemp('ayoslog-preview-');
         path = '${root.path}/photo.png';
-        await File(path).writeAsBytes(base64Decode(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8/x8AAwMCAO+a14kAAAAASUVORK5CYII='));
+        final recorder = ui.PictureRecorder();
+        Canvas(recorder).drawColor(Colors.white, BlendMode.src);
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(1, 1);
+        final png = await image.toByteData(format: ui.ImageByteFormat.png);
+        await File(path).writeAsBytes(png!.buffer.asUint8List());
+        image.dispose();
+        picture.dispose();
       });
       addTearDown(() async {
-        for (var attempt = 0; ; attempt++) {
+        for (var attempt = 0;; attempt++) {
           try {
             await root.delete(recursive: true);
             break;
@@ -46,18 +52,29 @@ void main() {
       });
       await tester.pumpWidget(MaterialApp(
           theme: dark ? AppTheme.dark() : AppTheme.light(),
+          home: const Scaffold()));
+      // File reads and image decoding run outside the fake widget-test clock.
+      // Await both image variants instead of assuming a fixed delay is enough.
+      final context = tester.element(find.byType(Scaffold));
+      await tester.runAsync(() async {
+        final image = FileImage(File(path));
+        await precacheImage(
+            ResizeImage.resizeIfNeeded(1000, null, image), context,
+            onError: (error, stack) =>
+                Error.throwWithStackTrace(error, stack!));
+        await precacheImage(image, context,
+            onError: (error, stack) =>
+                Error.throwWithStackTrace(error, stack!));
+      });
+      await tester.pumpWidget(MaterialApp(
+          theme: dark ? AppTheme.dark() : AppTheme.light(),
           home: Scaffold(body: AppAttachmentPreview(path: path))));
-      await tester.runAsync(
-          () async => Future<void>.delayed(const Duration(milliseconds: 50)));
-      await tester.pump();
       await tester.tap(find.byType(AppAttachmentPreview));
-      await tester.pumpAndSettle();
-      await tester.runAsync(
-          () async => Future<void>.delayed(const Duration(milliseconds: 100)));
       await tester.pumpAndSettle();
       expect(find.byType(AppAttachmentViewer), findsOneWidget);
       expect(find.byType(InteractiveViewer), findsOneWidget);
-      expect(tester.widget<RawImage>(find.byType(RawImage).last).image, isNotNull);
+      expect(
+          tester.widget<RawImage>(find.byType(RawImage).last).image, isNotNull);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     });

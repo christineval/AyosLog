@@ -56,9 +56,7 @@ void main() {
     final button = find.text('Add receipt photo +').evaluate().isNotEmpty
         ? find.text('Add receipt photo +')
         : find.text('Choose another receipt photo');
-    await Scrollable.ensureVisible(
-        tester.element(button),
-        alignment: .5);
+    await Scrollable.ensureVisible(tester.element(button), alignment: .5);
     await tester.pumpAndSettle();
     await tester.tap(button.hitTestable());
   }
